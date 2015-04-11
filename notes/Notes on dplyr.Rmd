@@ -1,0 +1,116 @@
+---
+output:
+  html_document:
+    toc: true
+    theme: flatly
+---
+
+### Introduction
+
+We will compare commands using the [dplyr](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html) package, and the equivalent generic R commands.
+
+First, let's load the data and the [Magrittr](http://cran.r-project.org/web/packages/magrittr/vignettes/magrittr.html) library:
+
+```{r, eval=TRUE, echo=TRUE}
+url <- "http://cran-logs.rstudio.com/2015/2015-03-14.csv.gz"
+file <- paste0(tempdir(), "/../", "temp_file.csv.gz")
+if (!file.exists(file)) download.file(url = url, destfile = file, method = "curl")
+cran_df <- read.csv(gzfile(file), stringsAsFactors = FALSE)
+library(magrittr)
+```
+
+Now we load the dplyr library, set some cosmetic options, and we create a `tbl_df` variable with the content of `cran_df`: 
+
+```{r, message=FALSE}
+library(dplyr)
+options(dplyr.print_min = 3)
+cran_tbl_df <- tbl_df(cran_df)
+```
+
+Let's compare both objects and their summaries: 
+
+```{r}
+object.size(cran_df); object.size(cran_tbl_df) 
+head(cran_df, n = 3); cran_tbl_df
+```
+
+### Select
+
+To select all variables from `size` to `country`:
+
+```{r}
+# Generic R
+r <- sapply(c("size", "country"), function(x) which(names(cran_df)==x))
+cran_df[,r[1]:r[2]] %>% head(n=3)
+# dplyr
+cran_tbl_df %>% select(size:country)
+# time
+system.time(for (i in 1:100) { 
+    r <- sapply(c("size", "country"), function(x) which(names(cran_df)==x))
+    x <- cran_df[,r[1]:r[2]] } )
+system.time(for (i in 1:100) x <- select(cran_tbl_df,size:country))
+```
+
+To select all variables excluding those from `time` to `version`:
+
+```{r}
+# Generic R
+r <- sapply(c("time", "version"), function(x) which(names(cran_df)==x))
+cran_df[,-(r[1]:r[2])] %>% head(n=3)
+# dplyr
+cran_tbl_df %>% select(-(time:version))
+# time
+system.time(for (i in 1:100) {
+    r <- sapply(c("time", "version"), function(x) which(names(cran_df)==x))
+    x <- cran_df[,-(r[1]:r[2])] } )
+system.time(for (i in 1:100) x <- select(cran_tbl_df,-(time:version)))
+```
+
+### Filter
+
+To filter all rows for which the package variable is equal to "swirl": 
+
+```{r}
+# Generic R
+cran_df[ cran_df$package == "swirl", ] %>% head(n=3)
+# dplyr
+cran_tbl_df %>% filter(package == "swirl")
+# time
+system.time(for (i in 1:20) x <- cran_df[ cran_df$package == "swirl", ])
+system.time(for (i in 1:20) x <- filter(cran_tbl_df, package == "swirl"))
+```
+
+A more complex filter, combined with a select:
+
+```{r}
+# Generic R
+r <- sapply(c("r_version", "version", "r_os"), function(x) which(names(cran_df)==x))
+cran_df[ cran_df$r_version >= "3.1" & cran_df$country != "US",
+         setdiff(r[1]:r[2],r[3]) ] %>% head(n=3)
+# dplyr
+cran_tbl_df %>% 
+    filter(r_version >= "3.1" & country != "US") %>%
+    select(r_version:version, -r_os)
+#time
+system.time(for (i in 1:20) {
+    x <- cran_df[ cran_df$r_version >= "3.1" & cran_df$country != "US",
+                  setdiff(r[1]:r[2],r[3]) ] %>% head(n=3) } )
+system.time(for (i in 1:20) {
+    x <- cran_tbl_df %>% filter(r_version >= "3.1" & country != "US") %>%
+                         select(r_version:version, -r_os) } )
+```
+
+Not only is dplyr's syntax much more readble, it is also significantly faster !
+
+
+
+---
+R version:
+```{r, echo=FALSE}
+version
+```
+
+*Author: Alexandre Halm*  
+*Edited with [RStudio](http://www.rstudio.com/products/RStudio/#Desk)*  
+
+These notes were taken from the [swirl programming assignment](https://class.coursera.org/getdata-013/assignment) from [Coursera](http://www.coursera.org)'s [Getting and Cleaning Data](https://class.coursera.org/getdata-013) course.

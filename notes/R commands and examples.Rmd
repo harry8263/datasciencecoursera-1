@@ -1,0 +1,298 @@
+---
+output:
+  html_document:
+    toc: true
+    theme: flatly
+---    
+
+# R commands and examples
+
+
+## R environment
+
+### Moving around
+
+To set R's working directory: `setwd("directory_name")`.
+
+### Inspecting objects
+
+`str` displays a compact description of any object, while `summary` displays a more analystic summary of data objects: 
+
+```{r}
+str(c(T,F,F,F,T)); str(str)
+x <- runif(33,0,2)
+str(x); summary(x)
+```
+
+`?function` opens the man page for function.
+
+### Reading and writing data
+
+The canonical function is `read.table`:
+
+```{r}
+args(read.table)
+```
+
+`read.csv` and `read.csv2` are calls to `read.table` with different default values for the `header`, `sep`, `dec`, `fill` and `comment.char` variables).
+
+The help page for read.table `?read.table` has useful hints to load large tables efficiently.
+
+To write data into a text file while *preserving metadata*, use `dump`/`source` and `dput`/`dget`:
+
+```{r, eval=FALSE}
+x <- data.frame(X=1:4, Y=6:9); y <- rnorm(n = 10, mean = 1, sd = 0.1)
+dump(c("x","y"), file="newData.R")  # to store x and y in the newData.R file
+source("newData.R")  # to load the content of newData.R into R
+```
+
+Data is read through *connections*. To open a connection to a file: `file("filename")`, to a url: `url("address")`.
+
+
+## Manipulating data
+
+### Object names
+
+Giving names to elements of a vector:
+
+```{r}
+x <- 1:3
+names(x) <- c("foo", "bar", "baz")
+x; names(x)
+```
+
+For a list: 
+
+```{r}
+x <- list(a = 1, b = "Bob")
+x; names(x); x$a
+```
+
+For a matrix: 
+
+```{r}
+m <- matrix(1:4, nrow=2, ncol=2)
+dimnames(m) <- list(c("a", "b"), c(123,456))
+m
+```
+
+### Data frames
+
+Creating a data frame: 
+
+```{r, eval=TRUE, echo=TRUE}
+x <- data.frame(foo = 1:3, bar = c(T,F,T), baz = c("Alex", "Bob", "Cathy"))
+x; nrow(x); row.names(x); ncol(x); names(x)
+```
+
+### Subsetting
+
+`a[...]` always returns an object of the same class as `a` (so list -> list, vector -> vector ...) and can contain one or more elements of `a`.
+
+`a[[...]]` is used to extract *one* element of either a *list* or a *data frame*. It is equivalent to `a$...`.
+
+Some examples: 
+
+```{r}
+x <- c("a", "b", "a", "c")
+x[2:3]  # numeric index
+x=="a"; x[x=="a"]; (1:4)[x=="a"]  # logical index
+```
+
+With a list:
+
+```{r}
+x <- list(foo = 1:4, bar = c(T,F), baz = "Hello")
+x[1:2]
+x$bar  # equivalent to x["bar"]
+x[c(1,3)]
+newVar <- "baz"; x[[newVar]]  # x$newVar would not work
+```
+
+With a matrix:
+
+```{r}
+m <- matrix(rnorm(6,mean=0,sd=1), 2, 3)
+m[1,]; class(m[1,])  # first row (a vector)
+m[,2:3]; class(m[,2:3])  # columns 2 to 3
+# drop=FALSE forces the output to be a matrix:
+class(m[2,3]); class(m[2,3, drop=FALSE])
+```
+
+To filter out NA values, use `is.na` and `complete.cases`.x
+
+### Simulation 
+
+Common random variable distributions are accessible through commands called `d*` (density function), `p*` (cumulative distribution), `q*` (quantiles) and `r*` (random numbers). Examples for `*` include `norm`  (normal distribution), `binom` (binomial), `pois` (Poisson), `exp` (exponential), `beta` (Beta), `rchisq` (chi squared) etc.
+
+```{r}
+dnorm(x = c(-1.96,0,1.96), mean = 0, sd = 1)  # density
+pnorm(q = c(-1.96,0,1.96), mean = 0, sd = 1, lower.tail = TRUE)  # cumulative distribution
+qnorm(p = c(0.025,0.5,0.975), mean = 0, sd = 1, lower.tail = TRUE)  # quantiles
+rnorm(n = 5)  # generates n random numbers with default parameters
+```
+
+To ensure simulation reproducibility, always set the random number seed with `set.seed`: 
+
+```{r}
+set.seed(1); rnorm(5); set.seed(1); rnorm(5)
+```
+
+Use `sample` to sample from an arbitrary set:
+
+```{r}
+sample(letters, size = 5, replace = TRUE)
+```
+
+
+## R programming
+
+### Flow control
+
+`if` returns a value in R:
+
+```{r, eval=FALSE}
+y <- if(x > 3) { 10 } else { -10 }  
+# but if can also be used in the usual/procedural way:
+if(x > 3) { y <- 10 } else { y <- -10 }  
+```
+
+`for` syntax: 
+
+```{r}
+x <- c(T,F,T,T)
+# the following commands are equivalent: 
+for(i in 1:4) { print(x[i]) }; for(element in x) { print(element) }
+```
+
+### Functions
+
+The following function takes a vector "set" and returns the subset of "set" whose elements are larger than "threshold":
+
+```{r}
+subset_with_threshold <- function(set, threshold = 0) {
+  set[set>threshold] 
+}
+subset_with_threshold(-2:2)
+```
+
+The function `neg_binom_log_lhd` returns a function, equal to the negative log likelihood, from a sample vector; it can then be passed to the `optimize` function:
+
+```{r}
+neg_binom_log_lhd <- function(sample) {
+  N <- length(sample)
+  n <- sum(sample)
+  function(r) { - r^n * (1-r)^(N-n) }
+}
+sample_1 <- rbinom(10,1,0.8)
+negLLL_1 <- neg_binom_log_lhd(sample_1)
+optimize(negLLL_1,c(0,1))$minimum
+```
+
+### Looping functions
+
+`lapply` applies a function to each element of a list (or of an object that can be cast to a list) and returns a list. `sapply` tries to simplify the output of `lapply` whenever possible:
+
+```{r}
+lapply( list(g=rnorm(100,0,1),b=rbinom(100,1,0.5),p=rpois(100,1)) , mean )
+sapply( list(g=rnorm(100,0,1),b=rbinom(100,1,0.5),p=rpois(100,1)) , mean )
+```
+
+`apply` applies a function to a given margin of a matrix:
+
+```{r}
+x <- matrix(1:6, 2, 3); x
+apply(x,1,sum)  # the function rowSums does it much faster
+apply(x,2,mean)  # the function colMeans does it much faster
+y <- matrix( runif(n=999,min=0,max=1) , nrow = 3)
+apply(y,1,quantile, probs=c(0.25,0.5,0.75))  # the probs arg is passed to quantile
+```
+
+`mapply` allows to call a single function with several sets of arguments: 
+
+```{r}
+mapply(rnorm, n=2, sd=runif(3), mean=10*(-1:1))
+```
+
+`tapply` applies a function over subsets of a vector:
+
+```{r}
+x <- c( rnorm(20,0,1) , rbinom(20,1,0.33) , rpois(20,1) )
+f <- gl(n = 3, k = 20, labels = c("norm","binom","pois"))  # a sequence of factors
+tapply(x, INDEX=f, FUN=mean)
+
+```
+
+`split` splits an object (e.g. a data frame) along a factor:
+
+```{r}
+s <- split(airquality, airquality$Month)
+sapply(s, function(x) {colMeans(x[,1:4], na.rm = TRUE)})
+```
+
+### Debugging
+
+`traceback()`: traces back the stack of function when called right after an error has occured
+
+`debug(function)`: flags a function for debugging; debugger starts at line 1 at every call of the function
+
+`browser`: can be inserted in a function code; suspends execution of code at that point and enters debugging mode
+
+`options(error = recover)` sets an environment-wide variable; after an error, allows to browse the function call stack
+
+### Profiling
+
+`system.time(exp)` measures the time taken to evaluate exp:
+
+```{r}
+system.time(sd(rnorm(10^6)))
+```
+
+`Rprof()` keeps track of the function stack at regular time intervals and measures time spent in each function; `summaryRprof()` summarizes the output of `Rprof()`.
+
+
+## Misc commands and examples
+
+#### Sequences, ranges and repetitions:
+
+```{r}
+rep(c(1,2,3),times=3); rep(c(F,T),each=4)
+s1 <- seq(from = pi, to = 10, length.out = 5); s1; seq(to = 0, along.with = s1)
+```
+
+
+## R Markdown
+
+First the R Markdown package needs to be installed: 
+
+```{r, eval=FALSE}
+install.packages("rmarkdown")
+```
+
+To embed an R code chunk, place it between backticks like this: 
+
+```{r, echo=FALSE, comment=NA}
+cat("```{r}\n# insert code here\n```")
+```
+
+To embed a code chunk *with* code evaluation, specify `{r, eval=TRUE}` (default value,) and to *include* the code:`{r, echo=TRUE}` (default value). For instance, the following code chunk:
+
+```{r, echo=FALSE, comment=NA}
+cat("```{R, eval=TRUE, echo=FALSE}\nsummary(cars)\n```")
+```
+
+produces: 
+
+```{r, eval=TRUE, echo=FALSE}
+summary(cars)
+```
+
+---
+R version:
+```{r, echo=FALSE}
+version
+```
+
+*Author: Alexandre Halm*  
+*Edited with [RStudio](http://www.rstudio.com/products/RStudio/#Desk)*  
+Notes taken from the [R Programming](https://www.coursera.org/course/rprog) course.
