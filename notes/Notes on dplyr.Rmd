@@ -5,13 +5,16 @@ output:
     theme: flatly
 ---
 
-### Introduction
+## Introduction
 
 We will compare commands using the [dplyr](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html) package, and the equivalent generic R commands.
 
 First, let's load the data and the [Magrittr](http://cran.r-project.org/web/packages/magrittr/vignettes/magrittr.html) library:
 
-```{r, eval=TRUE, echo=TRUE}
+```{r, eval=TRUE, echo=-(1:3)}
+library(knitr)
+opts_chunk$set(results="hold", cache=TRUE)
+options(dplyr.print_min = 3)
 url <- "http://cran-logs.rstudio.com/2015/2015-03-14.csv.gz"
 file <- paste0(tempdir(), "/../", "temp_file.csv.gz")
 if (!file.exists(file)) download.file(url = url, destfile = file, method = "curl")
@@ -19,11 +22,10 @@ cran_df <- read.csv(gzfile(file), stringsAsFactors = FALSE)
 library(magrittr)
 ```
 
-Now we load the dplyr library, set some cosmetic options, and we create a `tbl_df` variable with the content of `cran_df`: 
+Now we load the dplyr library and we create a `tbl_df` variable with the content of `cran_df`: 
 
-```{r, message=FALSE}
+```{r, message=FALSE, cache=FALSE}
 library(dplyr)
-options(dplyr.print_min = 3)
 cran_tbl_df <- tbl_df(cran_df)
 ```
 
@@ -34,12 +36,12 @@ object.size(cran_df); object.size(cran_tbl_df)
 head(cran_df, n = 3); cran_tbl_df
 ```
 
-### Select
+## Select
 
 To select all variables from `size` to `country`:
 
 ```{r}
-# Generic R
+# generic R
 r <- sapply(c("size", "country"), function(x) which(names(cran_df)==x))
 cran_df[,r[1]:r[2]] %>% head(n=3)
 # dplyr
@@ -47,14 +49,14 @@ cran_tbl_df %>% select(size:country)
 # time
 system.time(for (i in 1:100) { 
     r <- sapply(c("size", "country"), function(x) which(names(cran_df)==x))
-    x <- cran_df[,r[1]:r[2]] } )
-system.time(for (i in 1:100) x <- select(cran_tbl_df,size:country))
+    cran_df[,r[1]:r[2]] } )
+system.time(for (i in 1:100) select(cran_tbl_df,size:country))
 ```
 
 To select all variables excluding those from `time` to `version`:
 
 ```{r}
-# Generic R
+# generic R
 r <- sapply(c("time", "version"), function(x) which(names(cran_df)==x))
 cran_df[,-(r[1]:r[2])] %>% head(n=3)
 # dplyr
@@ -62,28 +64,28 @@ cran_tbl_df %>% select(-(time:version))
 # time
 system.time(for (i in 1:100) {
     r <- sapply(c("time", "version"), function(x) which(names(cran_df)==x))
-    x <- cran_df[,-(r[1]:r[2])] } )
-system.time(for (i in 1:100) x <- select(cran_tbl_df,-(time:version)))
+    cran_df[,-(r[1]:r[2])] } )
+system.time(for (i in 1:100) select(cran_tbl_df,-(time:version)))
 ```
 
-### Filter
+## Filter
 
-To filter all rows for which the package variable is equal to "swirl": 
+To filter all rows for which the package variable is equal to "swirl" or "dplyr": 
 
 ```{r}
-# Generic R
-cran_df[ cran_df$package == "swirl", ] %>% head(n=3)
+# generic R
+cran_df[ cran_df$package %in% c("swirl","dplyr"), ] %>% head(n=3)
 # dplyr
-cran_tbl_df %>% filter(package == "swirl")
+cran_tbl_df %>% filter(package %in% c("swirl","dplyr"))
 # time
-system.time(for (i in 1:20) x <- cran_df[ cran_df$package == "swirl", ])
-system.time(for (i in 1:20) x <- filter(cran_tbl_df, package == "swirl"))
+system.time(for (i in 1:20) cran_df[ cran_df$package %in% c("swirl","dplyr"), ])
+system.time(for (i in 1:20) cran_tbl_df %>% filter(package %in% c("swirl","dplyr")))
 ```
 
 A more complex filter, combined with a select:
 
 ```{r}
-# Generic R
+# generic R
 r <- sapply(c("r_version", "version", "r_os"), function(x) which(names(cran_df)==x))
 cran_df[ cran_df$r_version >= "3.1" & cran_df$country != "US",
          setdiff(r[1]:r[2],r[3]) ] %>% head(n=3)
@@ -91,23 +93,98 @@ cran_df[ cran_df$r_version >= "3.1" & cran_df$country != "US",
 cran_tbl_df %>% 
     filter(r_version >= "3.1" & country != "US") %>%
     select(r_version:version, -r_os)
-#time
-system.time(for (i in 1:20) {
-    x <- cran_df[ cran_df$r_version >= "3.1" & cran_df$country != "US",
-                  setdiff(r[1]:r[2],r[3]) ] %>% head(n=3) } )
-system.time(for (i in 1:20) {
-    x <- cran_tbl_df %>% filter(r_version >= "3.1" & country != "US") %>%
-                         select(r_version:version, -r_os) } )
+# time
+system.time(for (i in 1:10) {
+    r <- sapply(c("r_version", "version", "r_os"), function(x) which(names(cran_df)==x))
+    cran_df[ cran_df$r_version >= "3.1" & cran_df$country != "US",
+             setdiff(r[1]:r[2],r[3]) ] %>% head(n=3) } )
+system.time(for (i in 1:10) {
+    cran_tbl_df %>% filter(r_version >= "3.1" & country != "US") %>%
+                    select(r_version:version, -r_os) } )
 ```
 
-Not only is dplyr's syntax much more readble, it is also significantly faster !
+Not only is dplyr's syntax much more compact and readable, it is also significantly faster !
+
+A last example, with a function applied to one of the variables: 
+
+```{r}
+# generic R
+r <- sapply(c("date", "size"), function(x) which(names(cran_df)==x))
+cran_df[ !is.na(cran_df$r_arch) & cran_df$package == "dplyr", 
+         -(r[1]:r[2]) ] %>% head(n=3)
+# dplyr
+cran_tbl_df %>%
+    filter(!is.na(r_arch), package=="dplyr") %>%
+    select(-(date:size))
+# time
+system.time(for (i in 1:10) {
+    r <- sapply(c("date", "size"), function(x) which(names(cran_df)==x))
+    cran_df[ !is.na(cran_df$r_arch) & cran_df$package == "dplyr", 
+             -(r[1]:r[2]) ] %>% head(n=3) } )
+system.time(for (i in 1:10) {
+    cran_tbl_df %>% filter(!is.na(r_arch), package=="dplyr") %>%
+                    select(-(date:size)) } )
+```
+
+## Arrange
+
+To arrange rows of a subset of cran in descending order of the variable `size` modulo 10 and then in ascending order of the variable `ip_id`: 
+
+```{r}
+# generic R
+cran2_df <- cran_df[,3:10]
+cran2_df[ with(cran2_df, order( -(size%%10) , ip_id) ) , ] %>% head(n=3)
+# dplyr
+cran2_tbl_df <- select(cran_tbl_df, size:ip_id)
+cran2_tbl_df %>% arrange( desc(size%%10), ip_id )
+# time
+system.time(for (i in 1:5) cran2_df[ with(cran2_df, order( -(size%%10) , ip_id) ) , ] %>% head(n=3))
+system.time(for (i in 1:5) cran2_tbl_df %>% arrange( desc(size%%10), ip_id ))
+```
+
+## Mutate
+
+To take a subset of columns and a sample of rows, then add 2 new columns with time stamps converted to actual `POSIXct` values and their numeric values:
+
+```{r}
+# generic R
+r <- sapply(c("r_version", "r_os"), function(x) which(names(cran_df)==x))
+cran3_df <- 
+    cran_df %>% (function(x) x[sample(nrow(x),size=10000),-(r[1]:r[2])]) %>%
+                within(time_2 <- as.POSIXct(time,format="%H:%M:%S")) %>%
+                within(time_s <- as.numeric(time_2))
+# dplyr
+cran3_tbl_df <- 
+    cran_tbl_df %>% select(-(r_version:r_os)) %>%
+                    sample_n(10000) %>%
+                    mutate(time_2 = as.POSIXct(time,format="%H:%M:%S"),
+                           time_3 = as.numeric(time_2))
+# time
+system.time(for (i in 1:10) { cran_df %>% (function(x) x[sample(nrow(x),size=10000),-(r[1]:r[2])]) %>%
+                                          within(time_2 <- as.POSIXct(time,format="%H:%M:%S")) %>%
+                                          within(time_3 <- as.numeric(time_2)) } )
+system.time(for (i in 1:10) { cran_tbl_df %>% select(-(r_version:r_os)) %>%
+                                              sample_n(10000) %>%
+                                              mutate(time_2 = as.POSIXct(time,format="%H:%M:%S"),
+                                                     time_3 = as.numeric(time_2)) } )
+```
+
+## Summarize
 
 
 
 ---
+
+Qgetuality sources on dplyr:
+
+* The canonical source for dplyr, Hadley Wickham's [dplyr repo](https://github.com/hadley/dplyr)
+* Kevin Markham's [dplyr tutorials](https://github.com/justmarkham/dplyr-tutorial) on Github
+
+---
+
 R version:
 ```{r, echo=FALSE}
-version
+version[c("platform", "os", "version.string", "nickname")]
 ```
 
 *Author: Alexandre Halm*  

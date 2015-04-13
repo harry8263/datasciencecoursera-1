@@ -139,8 +139,8 @@ source(&quot;newData.R&quot;)  # to load the content of newData.R into R</code><
 names(x) &lt;- c(&quot;foo&quot;, &quot;bar&quot;, &quot;baz&quot;)
 x; names(x)</code></pre>
 <pre><code>## foo bar baz 
-##   1   2   3</code></pre>
-<pre><code>## [1] &quot;foo&quot; &quot;bar&quot; &quot;baz&quot;</code></pre>
+##   1   2   3 
+## [1] &quot;foo&quot; &quot;bar&quot; &quot;baz&quot;</code></pre>
 <p>For a list:</p>
 <pre class="r"><code>x &lt;- list(a = 1, b = &quot;Bob&quot;)
 x; names(x); x$a</code></pre>
@@ -148,9 +148,10 @@ x; names(x); x$a</code></pre>
 ## [1] 1
 ## 
 ## $b
-## [1] &quot;Bob&quot;</code></pre>
-<pre><code>## [1] &quot;a&quot; &quot;b&quot;</code></pre>
-<pre><code>## [1] 1</code></pre>
+## [1] &quot;Bob&quot;
+## 
+## [1] &quot;a&quot; &quot;b&quot;
+## [1] 1</code></pre>
 <p>For a matrix:</p>
 <pre class="r"><code>m &lt;- matrix(1:4, nrow=2, ncol=2)
 dimnames(m) &lt;- list(c(&quot;a&quot;, &quot;b&quot;), c(123,456))
@@ -167,11 +168,11 @@ x; nrow(x); row.names(x); ncol(x); names(x)</code></pre>
 <pre><code>##   foo   bar   baz
 ## 1   1  TRUE  Alex
 ## 2   2 FALSE   Bob
-## 3   3  TRUE Cathy</code></pre>
-<pre><code>## [1] 3</code></pre>
-<pre><code>## [1] &quot;1&quot; &quot;2&quot; &quot;3&quot;</code></pre>
-<pre><code>## [1] 3</code></pre>
-<pre><code>## [1] &quot;foo&quot; &quot;bar&quot; &quot;baz&quot;</code></pre>
+## 3   3  TRUE Cathy
+## [1] 3
+## [1] &quot;1&quot; &quot;2&quot; &quot;3&quot;
+## [1] 3
+## [1] &quot;foo&quot; &quot;bar&quot; &quot;baz&quot;</code></pre>
 </div>
 <div id="subsetting" class="section level3">
 <h3>Subsetting</h3>
@@ -179,61 +180,63 @@ x; nrow(x); row.names(x); ncol(x); names(x)</code></pre>
 <p><code>a[[...]]</code> is used to extract <em>one</em> element of either a <em>list</em> or a <em>data frame</em>. It is equivalent to <code>a$...</code>.</p>
 <p>Some examples:</p>
 <pre class="r"><code>x &lt;- c(&quot;a&quot;, &quot;b&quot;, &quot;a&quot;, &quot;c&quot;)
-x[2:3]  # numeric index</code></pre>
-<pre><code>## [1] &quot;b&quot; &quot;a&quot;</code></pre>
-<pre class="r"><code>x==&quot;a&quot;; x[x==&quot;a&quot;]; (1:4)[x==&quot;a&quot;]  # logical index</code></pre>
-<pre><code>## [1]  TRUE FALSE  TRUE FALSE</code></pre>
-<pre><code>## [1] &quot;a&quot; &quot;a&quot;</code></pre>
-<pre><code>## [1] 1 3</code></pre>
+x[2:3]  # numeric index
+x==&quot;a&quot;; x[x==&quot;a&quot;]; (1:4)[x==&quot;a&quot;]  # logical index</code></pre>
+<pre><code>## [1] &quot;b&quot; &quot;a&quot;
+## [1]  TRUE FALSE  TRUE FALSE
+## [1] &quot;a&quot; &quot;a&quot;
+## [1] 1 3</code></pre>
 <p>With a list:</p>
 <pre class="r"><code>x &lt;- list(foo = 1:4, bar = c(T,F), baz = &quot;Hello&quot;)
-x[1:2]</code></pre>
+x[1:2]
+x$bar  # equivalent to x[&quot;bar&quot;]
+x[c(1,3)]
+newVar &lt;- &quot;baz&quot;; x[[newVar]]  # x$newVar would not work</code></pre>
 <pre><code>## $foo
 ## [1] 1 2 3 4
 ## 
 ## $bar
-## [1]  TRUE FALSE</code></pre>
-<pre class="r"><code>x$bar  # equivalent to x[&quot;bar&quot;]</code></pre>
-<pre><code>## [1]  TRUE FALSE</code></pre>
-<pre class="r"><code>x[c(1,3)]</code></pre>
-<pre><code>## $foo
+## [1]  TRUE FALSE
+## 
+## [1]  TRUE FALSE
+## $foo
 ## [1] 1 2 3 4
 ## 
 ## $baz
+## [1] &quot;Hello&quot;
+## 
 ## [1] &quot;Hello&quot;</code></pre>
-<pre class="r"><code>newVar &lt;- &quot;baz&quot;; x[[newVar]]  # x$newVar would not work</code></pre>
-<pre><code>## [1] &quot;Hello&quot;</code></pre>
 <p>With a matrix:</p>
 <pre class="r"><code>m &lt;- matrix(rnorm(6,mean=0,sd=1), 2, 3)
-m[1,]; class(m[1,])  # first row (a vector)</code></pre>
-<pre><code>## [1] 0.3685721 1.1708069 1.9658922</code></pre>
-<pre><code>## [1] &quot;numeric&quot;</code></pre>
-<pre class="r"><code>m[,2:3]; class(m[,2:3])  # columns 2 to 3</code></pre>
-<pre><code>##          [,1]      [,2]
-## [1,] 1.170807  1.965892
-## [2,] 1.685127 -0.776378</code></pre>
-<pre><code>## [1] &quot;matrix&quot;</code></pre>
-<pre class="r"><code># drop=FALSE forces the output to be a matrix:
+m[1,]; class(m[1,])  # first row (a vector)
+m[,2:3]; class(m[,2:3])  # columns 2 to 3
+# drop=FALSE forces the output to be a matrix:
 class(m[2,3]); class(m[2,3, drop=FALSE])</code></pre>
-<pre><code>## [1] &quot;numeric&quot;</code></pre>
-<pre><code>## [1] &quot;matrix&quot;</code></pre>
+<pre><code>## [1] 0.3685721 1.1708069 1.9658922
+## [1] &quot;numeric&quot;
+##          [,1]      [,2]
+## [1,] 1.170807  1.965892
+## [2,] 1.685127 -0.776378
+## [1] &quot;matrix&quot;
+## [1] &quot;numeric&quot;
+## [1] &quot;matrix&quot;</code></pre>
 <p>To filter out NA values, use <code>is.na</code> and <code>complete.cases</code>.x</p>
 </div>
 <div id="simulation" class="section level3">
 <h3>Simulation</h3>
 <p>Common random variable distributions are accessible through commands called <code>d*</code> (density function), <code>p*</code> (cumulative distribution), <code>q*</code> (quantiles) and <code>r*</code> (random numbers). Examples for <code>*</code> include <code>norm</code> (normal distribution), <code>binom</code> (binomial), <code>pois</code> (Poisson), <code>exp</code> (exponential), <code>beta</code> (Beta), <code>rchisq</code> (chi squared) etc.</p>
-<pre class="r"><code>dnorm(x = c(-1.96,0,1.96), mean = 0, sd = 1)  # density</code></pre>
-<pre><code>## [1] 0.05844094 0.39894228 0.05844094</code></pre>
-<pre class="r"><code>pnorm(q = c(-1.96,0,1.96), mean = 0, sd = 1, lower.tail = TRUE)  # cumulative distribution</code></pre>
-<pre><code>## [1] 0.0249979 0.5000000 0.9750021</code></pre>
-<pre class="r"><code>qnorm(p = c(0.025,0.5,0.975), mean = 0, sd = 1, lower.tail = TRUE)  # quantiles</code></pre>
-<pre><code>## [1] -1.959964  0.000000  1.959964</code></pre>
-<pre class="r"><code>rnorm(n = 5)  # generates n random numbers with default parameters</code></pre>
-<pre><code>## [1] -0.1072686 -0.3382583  0.8103551  0.6886011 -1.4180957</code></pre>
+<pre class="r"><code>dnorm(x = c(-1.96,0,1.96), mean = 0, sd = 1)  # density
+pnorm(q = c(-1.96,0,1.96), mean = 0, sd = 1, lower.tail = TRUE)  # cumulative distribution
+qnorm(p = c(0.025,0.5,0.975), mean = 0, sd = 1, lower.tail = TRUE)  # quantiles
+rnorm(n = 5)  # generates n random numbers with default parameters</code></pre>
+<pre><code>## [1] 0.05844094 0.39894228 0.05844094
+## [1] 0.0249979 0.5000000 0.9750021
+## [1] -1.959964  0.000000  1.959964
+## [1] -0.1072686 -0.3382583  0.8103551  0.6886011 -1.4180957</code></pre>
 <p>To ensure simulation reproducibility, always set the random number seed with <code>set.seed</code>:</p>
 <pre class="r"><code>set.seed(1); rnorm(5); set.seed(1); rnorm(5)</code></pre>
-<pre><code>## [1] -0.6264538  0.1836433 -0.8356286  1.5952808  0.3295078</code></pre>
-<pre><code>## [1] -0.6264538  0.1836433 -0.8356286  1.5952808  0.3295078</code></pre>
+<pre><code>## [1] -0.6264538  0.1836433 -0.8356286  1.5952808  0.3295078
+## [1] -0.6264538  0.1836433 -0.8356286  1.5952808  0.3295078</code></pre>
 <p>Use <code>sample</code> to sample from an arbitrary set:</p>
 <pre class="r"><code>sample(letters, size = 5, replace = TRUE)</code></pre>
 <pre><code>## [1] &quot;f&quot; &quot;e&quot; &quot;r&quot; &quot;j&quot; &quot;u&quot;</code></pre>
@@ -254,8 +257,8 @@ for(i in 1:4) { print(x[i]) }; for(element in x) { print(element) }</code></pre>
 <pre><code>## [1] TRUE
 ## [1] FALSE
 ## [1] TRUE
-## [1] TRUE</code></pre>
-<pre><code>## [1] TRUE
+## [1] TRUE
+## [1] TRUE
 ## [1] FALSE
 ## [1] TRUE
 ## [1] TRUE</code></pre>
@@ -282,7 +285,8 @@ optimize(negLLL_1,c(0,1))$minimum</code></pre>
 <div id="looping-functions" class="section level3">
 <h3>Looping functions</h3>
 <p><code>lapply</code> applies a function to each element of a list (or of an object that can be cast to a list) and returns a list. <code>sapply</code> tries to simplify the output of <code>lapply</code> whenever possible:</p>
-<pre class="r"><code>lapply( list(g=rnorm(100,0,1),b=rbinom(100,1,0.5),p=rpois(100,1)) , mean )</code></pre>
+<pre class="r"><code>lapply( list(g=rnorm(100,0,1),b=rbinom(100,1,0.5),p=rpois(100,1)) , mean )
+sapply( list(g=rnorm(100,0,1),b=rbinom(100,1,0.5),p=rpois(100,1)) , mean )</code></pre>
 <pre><code>## $g
 ## [1] -0.01094441
 ## 
@@ -290,22 +294,22 @@ optimize(negLLL_1,c(0,1))$minimum</code></pre>
 ## [1] 0.35
 ## 
 ## $p
-## [1] 1.12</code></pre>
-<pre class="r"><code>sapply( list(g=rnorm(100,0,1),b=rbinom(100,1,0.5),p=rpois(100,1)) , mean )</code></pre>
-<pre><code>##          g          b          p 
+## [1] 1.12
+## 
+##          g          b          p 
 ## 0.02843509 0.55000000 1.01000000</code></pre>
 <p><code>apply</code> applies a function to a given margin of a matrix:</p>
-<pre class="r"><code>x &lt;- matrix(1:6, 2, 3); x</code></pre>
+<pre class="r"><code>x &lt;- matrix(1:6, 2, 3); x
+apply(x,1,sum)  # the function rowSums does it much faster
+apply(x,2,mean)  # the function colMeans does it much faster
+y &lt;- matrix( runif(n=999,min=0,max=1) , nrow = 3)
+apply(y,1,quantile, probs=c(0.25,0.5,0.75))  # the probs arg is passed to quantile</code></pre>
 <pre><code>##      [,1] [,2] [,3]
 ## [1,]    1    3    5
-## [2,]    2    4    6</code></pre>
-<pre class="r"><code>apply(x,1,sum)  # the function rowSums does it much faster</code></pre>
-<pre><code>## [1]  9 12</code></pre>
-<pre class="r"><code>apply(x,2,mean)  # the function colMeans does it much faster</code></pre>
-<pre><code>## [1] 1.5 3.5 5.5</code></pre>
-<pre class="r"><code>y &lt;- matrix( runif(n=999,min=0,max=1) , nrow = 3)
-apply(y,1,quantile, probs=c(0.25,0.5,0.75))  # the probs arg is passed to quantile</code></pre>
-<pre><code>##          [,1]      [,2]      [,3]
+## [2,]    2    4    6
+## [1]  9 12
+## [1] 1.5 3.5 5.5
+##          [,1]      [,2]      [,3]
 ## 25% 0.1793908 0.2607230 0.2229782
 ## 50% 0.4130309 0.5045050 0.4861490
 ## 75% 0.7020901 0.8059156 0.7396065</code></pre>
@@ -341,7 +345,7 @@ sapply(s, function(x) {colMeans(x[,1:4], na.rm = TRUE)})</code></pre>
 <p><code>system.time(exp)</code> measures the time taken to evaluate exp:</p>
 <pre class="r"><code>system.time(sd(rnorm(10^6)))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.167   0.007   0.179</code></pre>
+##   0.258   0.012   0.579</code></pre>
 <p><code>Rprof()</code> keeps track of the function stack at regular time intervals and measures time spent in each function; <code>summaryRprof()</code> summarizes the output of <code>Rprof()</code>.</p>
 </div>
 </div>
@@ -349,12 +353,12 @@ sapply(s, function(x) {colMeans(x[,1:4], na.rm = TRUE)})</code></pre>
 <h2>Misc commands and examples</h2>
 <div id="sequences-ranges-and-repetitions" class="section level4">
 <h4>Sequences, ranges and repetitions:</h4>
-<pre class="r"><code>rep(c(1,2,3),times=3); rep(c(F,T),each=4)</code></pre>
-<pre><code>## [1] 1 2 3 1 2 3 1 2 3</code></pre>
-<pre><code>## [1] FALSE FALSE FALSE FALSE  TRUE  TRUE  TRUE  TRUE</code></pre>
-<pre class="r"><code>s1 &lt;- seq(from = pi, to = 10, length.out = 5); s1; seq(to = 0, along.with = s1)</code></pre>
-<pre><code>## [1]  3.141593  4.856194  6.570796  8.285398 10.000000</code></pre>
-<pre><code>## [1] -4 -3 -2 -1  0</code></pre>
+<pre class="r"><code>rep(c(1,2,3),times=3); rep(c(F,T),each=4)
+s1 &lt;- seq(from = pi, to = 10, length.out = 5); s1; seq(to = 0, along.with = s1)</code></pre>
+<pre><code>## [1] 1 2 3 1 2 3 1 2 3
+## [1] FALSE FALSE FALSE FALSE  TRUE  TRUE  TRUE  TRUE
+## [1]  3.141593  4.856194  6.570796  8.285398 10.000000
+## [1] -4 -3 -2 -1  0</code></pre>
 </div>
 </div>
 <div id="r-markdown" class="section level2">
@@ -381,17 +385,7 @@ summary(cars)
 <p>R version:</p>
 <pre><code>##                _                           
 ## platform       x86_64-apple-darwin13.4.0   
-## arch           x86_64                      
 ## os             darwin13.4.0                
-## system         x86_64, darwin13.4.0        
-## status                                     
-## major          3                           
-## minor          1.3                         
-## year           2015                        
-## month          03                          
-## day            09                          
-## svn rev        67962                       
-## language       R                           
 ## version.string R version 3.1.3 (2015-03-09)
 ## nickname       Smooth Sidewalk</code></pre>
 <p><em>Author: Alexandre Halm</em><br /><em>Edited with <a href="http://www.rstudio.com/products/RStudio/#Desk">RStudio</a></em><br />Notes taken from the <a href="https://www.coursera.org/course/rprog">R Programming</a> course.</p>

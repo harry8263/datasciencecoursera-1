@@ -65,11 +65,14 @@ img {
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#select">Select</a></li>
 <li><a href="#filter">Filter</a></li>
+<li><a href="#arrange">Arrange</a></li>
+<li><a href="#mutate">Mutate</a></li>
+<li><a href="#summarize">Summarize</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level3">
-<h3>Introduction</h3>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
 <p>We will compare commands using the <a href="http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html">dplyr</a> package, and the equivalent generic R commands.</p>
 <p>First, let’s load the data and the <a href="http://cran.r-project.org/web/packages/magrittr/vignettes/magrittr.html">Magrittr</a> library:</p>
 <pre class="r"><code>url &lt;- &quot;http://cran-logs.rstudio.com/2015/2015-03-14.csv.gz&quot;
@@ -77,24 +80,23 @@ file &lt;- paste0(tempdir(), &quot;/../&quot;, &quot;temp_file.csv.gz&quot;)
 if (!file.exists(file)) download.file(url = url, destfile = file, method = &quot;curl&quot;)
 cran_df &lt;- read.csv(gzfile(file), stringsAsFactors = FALSE)
 library(magrittr)</code></pre>
-<p>Now we load the dplyr library, set some cosmetic options, and we create a <code>tbl_df</code> variable with the content of <code>cran_df</code>:</p>
+<p>Now we load the dplyr library and we create a <code>tbl_df</code> variable with the content of <code>cran_df</code>:</p>
 <pre class="r"><code>library(dplyr)
-options(dplyr.print_min = 3)
 cran_tbl_df &lt;- tbl_df(cran_df)</code></pre>
 <p>Let’s compare both objects and their summaries:</p>
-<pre class="r"><code>object.size(cran_df); object.size(cran_tbl_df) </code></pre>
-<pre><code>## 20983736 bytes</code></pre>
-<pre><code>## 20983856 bytes</code></pre>
-<pre class="r"><code>head(cran_df, n = 3); cran_tbl_df</code></pre>
-<pre><code>##         date     time    size r_version r_arch      r_os     package
+<pre class="r"><code>object.size(cran_df); object.size(cran_tbl_df) 
+head(cran_df, n = 3); cran_tbl_df</code></pre>
+<pre><code>## 20983736 bytes
+## 20983856 bytes
+##         date     time    size r_version r_arch      r_os     package
 ## 1 2015-03-14 00:30:00  133023     3.1.2 x86_64 linux-gnu matrixStats
 ## 2 2015-03-14 00:29:39 3191975     3.1.1   i386   mingw32        Rcpp
 ## 3 2015-03-14 00:29:39   75831     3.1.1   i386   mingw32     stringr
 ##   version country ip_id
 ## 1  0.14.0      MX     1
 ## 2  0.11.5      US     2
-## 3   0.6.2      US     2</code></pre>
-<pre><code>## Source: local data frame [230,702 x 10]
+## 3   0.6.2      US     2
+## Source: local data frame [230,702 x 10]
 ## 
 ##          date     time    size r_version r_arch      r_os     package
 ## 1  2015-03-14 00:30:00  133023     3.1.2 x86_64 linux-gnu matrixStats
@@ -103,137 +105,226 @@ cran_tbl_df &lt;- tbl_df(cran_df)</code></pre>
 ## ..        ...      ...     ...       ...    ...       ...         ...
 ## Variables not shown: version (chr), country (chr), ip_id (int)</code></pre>
 </div>
-<div id="select" class="section level3">
-<h3>Select</h3>
+<div id="select" class="section level2">
+<h2>Select</h2>
 <p>To select all variables from <code>size</code> to <code>country</code>:</p>
-<pre class="r"><code># Generic R
+<pre class="r"><code># generic R
 r &lt;- sapply(c(&quot;size&quot;, &quot;country&quot;), function(x) which(names(cran_df)==x))
-cran_df[,r[1]:r[2]] %&gt;% head(n=3)</code></pre>
+cran_df[,r[1]:r[2]] %&gt;% head(n=3)
+# dplyr
+cran_tbl_df %&gt;% select(size:country)
+# time
+system.time(for (i in 1:100) { 
+    r &lt;- sapply(c(&quot;size&quot;, &quot;country&quot;), function(x) which(names(cran_df)==x))
+    cran_df[,r[1]:r[2]] } )
+system.time(for (i in 1:100) select(cran_tbl_df,size:country))</code></pre>
 <pre><code>##      size r_version r_arch      r_os     package version country
 ## 1  133023     3.1.2 x86_64 linux-gnu matrixStats  0.14.0      MX
 ## 2 3191975     3.1.1   i386   mingw32        Rcpp  0.11.5      US
-## 3   75831     3.1.1   i386   mingw32     stringr   0.6.2      US</code></pre>
-<pre class="r"><code># dplyr
-cran_tbl_df %&gt;% select(size:country)</code></pre>
-<pre><code>## Source: local data frame [230,702 x 7]
+## 3   75831     3.1.1   i386   mingw32     stringr   0.6.2      US
+## Source: local data frame [230,702 x 7]
 ## 
 ##       size r_version r_arch      r_os     package version country
 ## 1   133023     3.1.2 x86_64 linux-gnu matrixStats  0.14.0      MX
 ## 2  3191975     3.1.1   i386   mingw32        Rcpp  0.11.5      US
 ## 3    75831     3.1.1   i386   mingw32     stringr   0.6.2      US
-## ..     ...       ...    ...       ...         ...     ...     ...</code></pre>
-<pre class="r"><code># time
-system.time(for (i in 1:100) { 
-    r &lt;- sapply(c(&quot;size&quot;, &quot;country&quot;), function(x) which(names(cran_df)==x))
-    x &lt;- cran_df[,r[1]:r[2]] } )</code></pre>
-<pre><code>##    user  system elapsed 
-##   0.006   0.001   0.007</code></pre>
-<pre class="r"><code>system.time(for (i in 1:100) x &lt;- select(cran_tbl_df,size:country))</code></pre>
-<pre><code>##    user  system elapsed 
-##   0.035   0.000   0.037</code></pre>
+## ..     ...       ...    ...       ...         ...     ...     ...
+##    user  system elapsed 
+##   0.020   0.000   0.021 
+##    user  system elapsed 
+##   0.074   0.002   0.077</code></pre>
 <p>To select all variables excluding those from <code>time</code> to <code>version</code>:</p>
-<pre class="r"><code># Generic R
+<pre class="r"><code># generic R
 r &lt;- sapply(c(&quot;time&quot;, &quot;version&quot;), function(x) which(names(cran_df)==x))
-cran_df[,-(r[1]:r[2])] %&gt;% head(n=3)</code></pre>
+cran_df[,-(r[1]:r[2])] %&gt;% head(n=3)
+# dplyr
+cran_tbl_df %&gt;% select(-(time:version))
+# time
+system.time(for (i in 1:100) {
+    r &lt;- sapply(c(&quot;time&quot;, &quot;version&quot;), function(x) which(names(cran_df)==x))
+    cran_df[,-(r[1]:r[2])] } )
+system.time(for (i in 1:100) select(cran_tbl_df,-(time:version)))</code></pre>
 <pre><code>##         date country ip_id
 ## 1 2015-03-14      MX     1
 ## 2 2015-03-14      US     2
-## 3 2015-03-14      US     2</code></pre>
-<pre class="r"><code># dplyr
-cran_tbl_df %&gt;% select(-(time:version))</code></pre>
-<pre><code>## Source: local data frame [230,702 x 3]
+## 3 2015-03-14      US     2
+## Source: local data frame [230,702 x 3]
 ## 
 ##          date country ip_id
 ## 1  2015-03-14      MX     1
 ## 2  2015-03-14      US     2
 ## 3  2015-03-14      US     2
-## ..        ...     ...   ...</code></pre>
-<pre class="r"><code># time
-system.time(for (i in 1:100) {
-    r &lt;- sapply(c(&quot;time&quot;, &quot;version&quot;), function(x) which(names(cran_df)==x))
-    x &lt;- cran_df[,-(r[1]:r[2])] } )</code></pre>
-<pre><code>##    user  system elapsed 
-##   0.008   0.000   0.008</code></pre>
-<pre class="r"><code>system.time(for (i in 1:100) x &lt;- select(cran_tbl_df,-(time:version)))</code></pre>
-<pre><code>##    user  system elapsed 
-##   0.033   0.001   0.034</code></pre>
+## ..        ...     ...   ...
+##    user  system elapsed 
+##   0.017   0.000   0.018 
+##    user  system elapsed 
+##   0.080   0.001   0.082</code></pre>
 </div>
-<div id="filter" class="section level3">
-<h3>Filter</h3>
-<p>To filter all rows for which the package variable is equal to “swirl”:</p>
-<pre class="r"><code># Generic R
-cran_df[ cran_df$package == &quot;swirl&quot;, ] %&gt;% head(n=3)</code></pre>
-<pre><code>##           date     time   size r_version r_arch      r_os package version
-## 103 2015-03-14 00:31:14 133780     3.0.2 x86_64   mingw32   swirl  2.2.21
-## 337 2015-03-14 00:35:03  51553     3.0.2 x86_64 linux-gnu   swirl  2.2.21
-## 460 2015-03-14 00:36:46 133019     3.1.3 x86_64   mingw32   swirl  2.2.21
+<div id="filter" class="section level2">
+<h2>Filter</h2>
+<p>To filter all rows for which the package variable is equal to “swirl” or “dplyr”:</p>
+<pre class="r"><code># generic R
+cran_df[ cran_df$package %in% c(&quot;swirl&quot;,&quot;dplyr&quot;), ] %&gt;% head(n=3)
+# dplyr
+cran_tbl_df %&gt;% filter(package %in% c(&quot;swirl&quot;,&quot;dplyr&quot;))
+# time
+system.time(for (i in 1:20) cran_df[ cran_df$package %in% c(&quot;swirl&quot;,&quot;dplyr&quot;), ])
+system.time(for (i in 1:20) cran_tbl_df %&gt;% filter(package %in% c(&quot;swirl&quot;,&quot;dplyr&quot;)))</code></pre>
+<pre><code>##           date     time    size r_version r_arch    r_os package version
+## 39  2015-03-14 00:29:56 2597248     3.1.2 x86_64 mingw32   dplyr   0.4.1
+## 103 2015-03-14 00:31:14  133780     3.0.2 x86_64 mingw32   swirl  2.2.21
+## 106 2015-03-14 00:31:29 2232473     3.1.3   i386 mingw32   dplyr     0.2
 ##     country ip_id
+## 39       AU     6
 ## 103      US    21
-## 337      SV    78
-## 460      US    93</code></pre>
-<pre class="r"><code># dplyr
-cran_tbl_df %&gt;% filter(package == &quot;swirl&quot;)</code></pre>
-<pre><code>## Source: local data frame [560 x 10]
+## 106      US    12
+## Source: local data frame [1,662 x 10]
 ## 
-##          date     time   size r_version r_arch      r_os package version
-## 1  2015-03-14 00:31:14 133780     3.0.2 x86_64   mingw32   swirl  2.2.21
-## 2  2015-03-14 00:35:03  51553     3.0.2 x86_64 linux-gnu   swirl  2.2.21
-## 3  2015-03-14 00:36:46 133019     3.1.3 x86_64   mingw32   swirl  2.2.21
-## ..        ...      ...    ...       ...    ...       ...     ...     ...
-## Variables not shown: country (chr), ip_id (int)</code></pre>
-<pre class="r"><code># time
-system.time(for (i in 1:20) x &lt;- cran_df[ cran_df$package == &quot;swirl&quot;, ])</code></pre>
-<pre><code>##    user  system elapsed 
-##   1.628   0.039   1.674</code></pre>
-<pre class="r"><code>system.time(for (i in 1:20) x &lt;- filter(cran_tbl_df, package == &quot;swirl&quot;))</code></pre>
-<pre><code>##    user  system elapsed 
-##   0.234   0.002   0.237</code></pre>
+##          date     time    size r_version r_arch    r_os package version
+## 1  2015-03-14 00:29:56 2597248     3.1.2 x86_64 mingw32   dplyr   0.4.1
+## 2  2015-03-14 00:31:14  133780     3.0.2 x86_64 mingw32   swirl  2.2.21
+## 3  2015-03-14 00:31:29 2232473     3.1.3   i386 mingw32   dplyr     0.2
+## ..        ...      ...     ...       ...    ...     ...     ...     ...
+## Variables not shown: country (chr), ip_id (int)
+##    user  system elapsed 
+##   2.998   0.114   4.335 
+##    user  system elapsed 
+##   0.582   0.026   0.781</code></pre>
 <p>A more complex filter, combined with a select:</p>
-<pre class="r"><code># Generic R
+<pre class="r"><code># generic R
 r &lt;- sapply(c(&quot;r_version&quot;, &quot;version&quot;, &quot;r_os&quot;), function(x) which(names(cran_df)==x))
 cran_df[ cran_df$r_version &gt;= &quot;3.1&quot; &amp; cran_df$country != &quot;US&quot;,
-         setdiff(r[1]:r[2],r[3]) ] %&gt;% head(n=3)</code></pre>
+         setdiff(r[1]:r[2],r[3]) ] %&gt;% head(n=3)
+# dplyr
+cran_tbl_df %&gt;% 
+    filter(r_version &gt;= &quot;3.1&quot; &amp; country != &quot;US&quot;) %&gt;%
+    select(r_version:version, -r_os)
+# time
+system.time(for (i in 1:10) {
+    r &lt;- sapply(c(&quot;r_version&quot;, &quot;version&quot;, &quot;r_os&quot;), function(x) which(names(cran_df)==x))
+    cran_df[ cran_df$r_version &gt;= &quot;3.1&quot; &amp; cran_df$country != &quot;US&quot;,
+             setdiff(r[1]:r[2],r[3]) ] %&gt;% head(n=3) } )
+system.time(for (i in 1:10) {
+    cran_tbl_df %&gt;% filter(r_version &gt;= &quot;3.1&quot; &amp; country != &quot;US&quot;) %&gt;%
+                    select(r_version:version, -r_os) } )</code></pre>
 <pre><code>##    r_version r_arch     package version
 ## 1      3.1.2 x86_64 matrixStats  0.14.0
 ## 29     3.1.2 x86_64      httpuv   1.3.2
-## 30     3.1.2 x86_64     RJSONIO   1.3-0</code></pre>
-<pre class="r"><code># dplyr
-cran_tbl_df %&gt;% 
-    filter(r_version &gt;= &quot;3.1&quot; &amp; country != &quot;US&quot;) %&gt;%
-    select(r_version:version, -r_os)</code></pre>
-<pre><code>## Source: local data frame [100,484 x 4]
+## 30     3.1.2 x86_64     RJSONIO   1.3-0
+## Source: local data frame [100,484 x 4]
 ## 
 ##    r_version r_arch     package version
 ## 1      3.1.2 x86_64 matrixStats  0.14.0
 ## 2      3.1.2 x86_64      httpuv   1.3.2
 ## 3      3.1.2 x86_64     RJSONIO   1.3-0
-## ..       ...    ...         ...     ...</code></pre>
-<pre class="r"><code>#time
-system.time(for (i in 1:20) {
-    x &lt;- cran_df[ cran_df$r_version &gt;= &quot;3.1&quot; &amp; cran_df$country != &quot;US&quot;,
-                  setdiff(r[1]:r[2],r[3]) ] %&gt;% head(n=3) } )</code></pre>
+## ..       ...    ...         ...     ...
+##    user  system elapsed 
+##   4.356   0.148   5.574 
+##    user  system elapsed 
+##   1.563   0.070   1.676</code></pre>
+<p>Not only is dplyr’s syntax much more compact and readable, it is also significantly faster !</p>
+<p>A last example, with a function applied to one of the variables:</p>
+<pre class="r"><code># generic R
+r &lt;- sapply(c(&quot;date&quot;, &quot;size&quot;), function(x) which(names(cran_df)==x))
+cran_df[ !is.na(cran_df$r_arch) &amp; cran_df$package == &quot;dplyr&quot;, 
+         -(r[1]:r[2]) ] %&gt;% head(n=3)
+# dplyr
+cran_tbl_df %&gt;%
+    filter(!is.na(r_arch), package==&quot;dplyr&quot;) %&gt;%
+    select(-(date:size))
+# time
+system.time(for (i in 1:10) {
+    r &lt;- sapply(c(&quot;date&quot;, &quot;size&quot;), function(x) which(names(cran_df)==x))
+    cran_df[ !is.na(cran_df$r_arch) &amp; cran_df$package == &quot;dplyr&quot;, 
+             -(r[1]:r[2]) ] %&gt;% head(n=3) } )
+system.time(for (i in 1:10) {
+    cran_tbl_df %&gt;% filter(!is.na(r_arch), package==&quot;dplyr&quot;) %&gt;%
+                    select(-(date:size)) } )</code></pre>
+<pre><code>##     r_version r_arch    r_os package version country ip_id
+## 39      3.1.2 x86_64 mingw32   dplyr   0.4.1      AU     6
+## 106     3.1.3   i386 mingw32   dplyr     0.2      US    12
+## 279     3.1.2 x86_64 mingw32   dplyr     0.2      AU    63
+## Source: local data frame [1,082 x 7]
+## 
+##    r_version r_arch    r_os package version country ip_id
+## 1      3.1.2 x86_64 mingw32   dplyr   0.4.1      AU     6
+## 2      3.1.3   i386 mingw32   dplyr     0.2      US    12
+## 3      3.1.2 x86_64 mingw32   dplyr     0.2      AU    63
+## ..       ...    ...     ...     ...     ...     ...   ...
+##    user  system elapsed 
+##   1.180   0.074   1.522 
+##    user  system elapsed 
+##   0.362   0.020   0.418</code></pre>
+</div>
+<div id="arrange" class="section level2">
+<h2>Arrange</h2>
+<p>To arrange rows of a subset of cran in descending order of the variable <code>size</code> modulo 10 and then in ascending order of the variable <code>ip_id</code>:</p>
+<pre class="r"><code># generic R
+cran2_df &lt;- cran_df[,3:10]
+cran2_df[ with(cran2_df, order( -(size%%10) , ip_id) ) , ] %&gt;% head(n=3)
+# dplyr
+cran2_tbl_df &lt;- select(cran_tbl_df, size:ip_id)
+cran2_tbl_df %&gt;% arrange( desc(size%%10), ip_id )
+# time
+system.time(for (i in 1:5) cran2_df[ with(cran2_df, order( -(size%%10) , ip_id) ) , ] %&gt;% head(n=3))
+system.time(for (i in 1:5) cran2_tbl_df %&gt;% arrange( desc(size%%10), ip_id ))</code></pre>
+<pre><code>##       size r_version r_arch      r_os  package version country ip_id
+## 52   35209     3.0.1 x86_64 linux-gnu reshape2   1.4.1      TR     3
+## 5169 88409     3.1.2 x86_64   mingw32     kknn   1.2-5      TR     3
+## 6371 93599     3.1.3   i386   mingw32     pROC   1.7.3      TR     3
+## Source: local data frame [230,702 x 8]
+## 
+##     size r_version r_arch      r_os  package version country ip_id
+## 1  35209     3.0.1 x86_64 linux-gnu reshape2   1.4.1      TR     3
+## 2  88409     3.1.2 x86_64   mingw32     kknn   1.2-5      TR     3
+## 3  93599     3.1.3   i386   mingw32     pROC   1.7.3      TR     3
+## ..   ...       ...    ...       ...      ...     ...     ...   ...
+##    user  system elapsed 
+##   3.491   0.059   3.575 
+##    user  system elapsed 
+##   1.669   0.031   1.713</code></pre>
+</div>
+<div id="mutate" class="section level2">
+<h2>Mutate</h2>
+<p>To take a subset of columns and a sample of rows, then add 2 new columns with time stamps converted to actual <code>POSIXct</code> values and their numeric values:</p>
+<pre class="r"><code># generic R
+r &lt;- sapply(c(&quot;r_version&quot;, &quot;r_os&quot;), function(x) which(names(cran_df)==x))
+cran3_df &lt;- 
+    cran_df %&gt;% (function(x) x[sample(nrow(x),size=10000),-(r[1]:r[2])]) %&gt;%
+                within(time_2 &lt;- as.POSIXct(time,format=&quot;%H:%M:%S&quot;)) %&gt;%
+                within(time_s &lt;- as.numeric(time_2))
+# dplyr
+cran3_tbl_df &lt;- 
+    cran_tbl_df %&gt;% select(-(r_version:r_os)) %&gt;%
+                    sample_n(10000) %&gt;%
+                    mutate(time_2 = as.POSIXct(time,format=&quot;%H:%M:%S&quot;),
+                           time_3 = as.numeric(time_2))
+# time
+system.time(for (i in 1:10) { cran_df %&gt;% (function(x) x[sample(nrow(x),size=10000),-(r[1]:r[2])]) %&gt;%
+                                          within(time_2 &lt;- as.POSIXct(time,format=&quot;%H:%M:%S&quot;)) %&gt;%
+                                          within(time_3 &lt;- as.numeric(time_2)) } )
+system.time(for (i in 1:10) { cran_tbl_df %&gt;% select(-(r_version:r_os)) %&gt;%
+                                              sample_n(10000) %&gt;%
+                                              mutate(time_2 = as.POSIXct(time,format=&quot;%H:%M:%S&quot;),
+                                                     time_3 = as.numeric(time_2)) } )</code></pre>
 <pre><code>##    user  system elapsed 
-##   4.637   0.105   4.760</code></pre>
-<pre class="r"><code>system.time(for (i in 1:20) {
-    x &lt;- cran_tbl_df %&gt;% filter(r_version &gt;= &quot;3.1&quot; &amp; country != &quot;US&quot;) %&gt;%
-                         select(r_version:version, -r_os) } )</code></pre>
-<pre><code>##    user  system elapsed 
-##   1.605   0.047   1.658</code></pre>
+##   2.608   0.027   2.675 
+##    user  system elapsed 
+##   2.603   0.020   2.676</code></pre>
+</div>
+<div id="summarize" class="section level2">
+<h2>Summarize</h2>
+<hr />
+<p>Other quality sources on dplyr:</p>
+<ul>
+<li>The canonical source for dplyr, Hadley Wickham’s <a href="https://github.com/hadley/dplyr">dplyr repo</a></li>
+<li>Kevin Markham’s <a href="https://github.com/justmarkham/dplyr-tutorial">dplyr tutorials</a> on Github</li>
+</ul>
 <hr />
 <p>R version:</p>
 <pre><code>##                _                           
 ## platform       x86_64-apple-darwin13.4.0   
-## arch           x86_64                      
 ## os             darwin13.4.0                
-## system         x86_64, darwin13.4.0        
-## status                                     
-## major          3                           
-## minor          1.3                         
-## year           2015                        
-## month          03                          
-## day            09                          
-## svn rev        67962                       
-## language       R                           
 ## version.string R version 3.1.3 (2015-03-09)
 ## nickname       Smooth Sidewalk</code></pre>
 <p><em>Author: Alexandre Halm</em><br /><em>Edited with <a href="http://www.rstudio.com/products/RStudio/#Desk">RStudio</a></em></p>

@@ -18,7 +18,9 @@ To set R's working directory: `setwd("directory_name")`.
 
 `str` displays a compact description of any object, while `summary` displays a more analystic summary of data objects: 
 
-```{r}
+```{r, echo=-(1:2)}
+library(knitr)
+opts_chunk$set(results="hold", cache=TRUE)
 str(c(T,F,F,F,T)); str(str)
 x <- runif(33,0,2)
 str(x); summary(x)
@@ -290,7 +292,7 @@ summary(cars)
 ---
 R version:
 ```{r, echo=FALSE}
-version
+version[c("platform", "os", "version.string", "nickname")]
 ```
 
 *Author: Alexandre Halm*  
